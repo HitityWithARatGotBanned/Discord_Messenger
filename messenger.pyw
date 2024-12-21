@@ -48,7 +48,7 @@ class DiscordMessenger(ctk.CTk):
 
         self.token_entry = ctk.CTkEntry(
             self.main_frame,
-            placeholder_text="Enter Discord Token",
+            placeholder_text="Enter Discord Token(s), separated by commas",
             width=400,
             show="*"
         )
@@ -93,7 +93,7 @@ class DiscordMessenger(ctk.CTk):
             width=30,
             height=30
         )
-        self.attach_button.pack(side="right")  # Place it in the bottom right corner of the message box
+        self.attach_button.pack(side="right")
 
         self.send_button = ctk.CTkButton(
             self.main_frame,
@@ -102,7 +102,6 @@ class DiscordMessenger(ctk.CTk):
             width=200
         )
         self.send_button.pack(pady=10)
-
         self.connect_button = ctk.CTkButton(
             self.main_frame,
             text="Connect to Channel",
@@ -308,42 +307,24 @@ class DiscordMessenger(ctk.CTk):
                 break
 
     def send_message(self):
-        token = self.token_entry.get().strip()
+        tokens = self.token_entry.get().strip().split(',')
         channel_id = self.channel_entry.get().strip()
         message = self.message_entry.get("1.0", "end-1c").strip()
 
         if message == self.placeholder_text:
             message = ""
 
-        if not all([token, channel_id, message]):
+        if not all([tokens, channel_id, message]):
             self.add_message_to_display("Please fill all fields!", error=True)
             return
 
-        if "[Attachment:" in message:
-            start_index = message.find("[Attachment:") + len("[Attachment:")
-            end_index = message.find("]", start_index)
-            attachment_path = message[start_index:end_index].strip()
+        for token in tokens:
+            token = token.strip()
+            if not token:
+                continue
 
-            headers = {
-                'Authorization': token,
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
+            log_messages(token)
 
-            url = f'https://discord.com/api/v9/channels/{channel_id}/messages'
-
-            with open(attachment_path, 'rb') as f:
-                files = {
-                    'file': (attachment_path, f)
-                }
-                data = {'content': message.replace(f"[Attachment: {attachment_path}]", "")}  # Remove attachment text from message
-
-                response = requests.post(url, headers=headers, data=data, files=files)
-
-                if response.status_code == 200:
-                    self.add_message_to_display("Message sent successfully!")
-                else:
-                    self.add_message_to_display(f"Error {response.status_code}: {response.text}", error=True)
-        else:
             headers = {
                 'Authorization': token,
                 'Content-Type': 'application/json',
