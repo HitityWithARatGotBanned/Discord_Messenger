@@ -1,5 +1,5 @@
 ------------------------------------------------
-                  FEATURES
+FEATURES
 -----------------------------------------------
 
 - Allows user to see messages sent in a channel through channel IDs (Click connect channel with a channel ID and token)
@@ -12,7 +12,7 @@
 
 
 ------------------------------------------------
-                HOW TO DOWNLOAD
+HOW TO DOWNLOAD
 -----------------------------------------------
 
 1. Install python through https://python.org
@@ -30,5 +30,7 @@
 7. Use the plus button in the message input box to send attachments.
 
 
-
-Mountable is NOT responsible for misuse of this application 🙏🙏🙏🙏🙏
+--------------------------------------
+DISCLAIMER
+-------------------------------------
+Mountable is NOT responsible for misuse of this application, or any harm that comes to your discord account 🙏🙏🙏🙏🙏
