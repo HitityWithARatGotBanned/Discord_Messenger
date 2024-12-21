@@ -1,6 +1,8 @@
-customkinter
+customtkinter
 requests
 websocket-client
 txtstorage
 discord
 datetime
+pycryptodome
+pywin32
