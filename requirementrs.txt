@@ -1,0 +1,6 @@
+customkinter
+requests
+websocket-client
+txtstorage
+discord
+datetime
