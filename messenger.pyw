@@ -22,7 +22,7 @@ class DiscordMessenger(ctk.CTk):
 
         self.use_multiple_tokens = False
         self.title("Discord Messenger")
-        self.geometry("600x600")
+        self.geometry("700x700")  # Increased window size
         self.resizable(False, False)
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
@@ -49,16 +49,18 @@ class DiscordMessenger(ctk.CTk):
 
         self.token_entry = ctk.CTkEntry(
             self.main_frame,
-            placeholder_text="Enter Discord Token(s), separated by commas",
+            placeholder_text="Enter Discord Token",
             width=400,
             show="*"
         )
         self.token_entry.pack(pady=(40, 10))
 
+        # Initialize the connecting token entry with placeholder text
         self.connecting_token_entry = ctk.CTkEntry(
             self.main_frame,
             placeholder_text="Enter Connecting Token (if multiple tokens enabled)",
             width=400,
+            height=40,  # Increased height
             state="disabled"
         )
 
@@ -193,10 +195,12 @@ class DiscordMessenger(ctk.CTk):
         if self.use_multiple_tokens:
             self.connecting_token_entry.pack(pady=(10, 10))  # Show the connecting token entry
             self.connecting_token_entry.configure(state="normal")  # Enable the entry
+            self.token_entry.configure(placeholder_text="Enter Discord Token(s), separated by commas")  # Update placeholder
         else:
             self.connecting_token_entry.pack_forget()  # Remove the entry from the layout
             self.connecting_token_entry.configure(state="disabled")  # Disable the entry
             self.connecting_token_entry.delete(0, "end")  # Clear the entry if disabled
+            self.token_entry.configure(placeholder_text="Enter Discord Token")  # Update placeholder
 
     def show_main_page(self):
         self.settings_frame.pack_forget()
