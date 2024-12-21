@@ -3,11 +3,12 @@ FEATURES
 -----------------------------------------------
 
 - Allows user to see messages sent in a channel through channel IDs (Click connect channel with a channel ID and token)
-- Message Logging (Saves messages to a .txt
+- Message Logging (Saves messages to a .txt)
 - Sending messagees with a token and channel ID
-- Spam (Allows you to send messages in a delayed loop, check settings.)
+- Spam (Allows you to send messages in a delayed loop, check settings)
 - Send Attachments
-- Full user friendly interface.
+- Multiple token support
+- Full user friendly interface
 
 
 
