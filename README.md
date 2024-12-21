@@ -7,7 +7,7 @@ FEATURES
 - Sending messagees with a token and channel ID
 - Spam (Allows you to send messages in a delayed loop, check settings)
 - Send Attachments
-- Multiple token support
+- Multiple token support (Ex: MgIalwWe,LasdfwWrtgf)
 - Full user friendly interface
 
 
