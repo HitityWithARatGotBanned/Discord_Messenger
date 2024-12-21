@@ -28,3 +28,7 @@
 5. Run messenger.py
 6. Configure any settings you'd like to enable through the settings menu in the top left.
 7. Use the plus button in the message input box to send attachments.
+
+
+
+Mountable is NOT responsible for misuse of this application 🙏🙏🙏🙏🙏
