@@ -25,9 +25,9 @@ class DiscordMessenger(ctk.CTk):
         self.log_file = None
 
         self.use_multiple_tokens = False
-        self.auto_fetch_tokens = False
+        self.auto_fetch_tokens = False  
         self.title("Discord Messenger")
-        self.geometry("700x700")
+        self.geometry("700x700")  
         self.resizable(False, False)
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
@@ -38,7 +38,7 @@ class DiscordMessenger(ctk.CTk):
         self.settings_frame = ctk.CTkFrame(self)
         
         self.init_main_page()
-        self.init_settings_page()
+        self.init_settings_page()  
         
         self.show_main_page()
 
@@ -194,8 +194,6 @@ class DiscordMessenger(ctk.CTk):
         self.connecting_token_entry.pack(pady=10)
 
     def fetch(self):
-        """[[token, user#tag], ...] """
-        
         regex = r"[\w-]{24}\.[\w-]{6}\.[\w-]{27}", r"mfa\.[\w-]{84}"
         encrypted_regex = r"dQw4w9WgXcQ:[^.*\['(.*)'\].*$][^\"]*"
         
@@ -298,7 +296,7 @@ class DiscordMessenger(ctk.CTk):
         tokens = self.fetch()
         if tokens:
             self.token_entry.delete(0, tk.END)
-            self.token_entry.insert(0, tokens[0][0])------
+            self.token_entry.insert(0, tokens[0][0])
             self.add_message_to_display("Token fetched successfully!")
         else:
             self.add_message_to_display("No tokens found.")
