@@ -19,7 +19,7 @@ HOW TO DOWNLOAD
 1. Install python through https://python.org
 2. Download messenger.py
 3. Open up a console window
-4. Type the following commands to install the prequisite packages:
+4. Type the following commands to install the prequisite packages, or run pip install -r requirements.txt to install them automatically:
   - pip install customkinter
   - pip install requests
   - pip install websocket-client
