@@ -2,7 +2,7 @@
 FEATURES
 -----------------------------------------------
 
-- Allows user to see messages sent in a channel through channel IDs (Click connect channel with a channel ID and token)
+- Message Tracking (See messages sent on a specific channel, must be in discord/group)
 - Message Logging (Saves messages to a .txt)
 - Sending messagees with a token and channel ID
 - Spam (Allows you to send messages in a delayed loop, check settings)
