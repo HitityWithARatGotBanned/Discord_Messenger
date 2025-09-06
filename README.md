@@ -34,4 +34,4 @@ HOW TO DOWNLOAD
 --------------------------------------
 DISCLAIMER
 -------------------------------------
-Mountable is NOT responsible for misuse of this application, or any harm that comes to your discord account 🙏🙏🙏🙏🙏
+This is a rat.
